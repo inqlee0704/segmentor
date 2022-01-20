@@ -1,0 +1,10 @@
+data
+*.ipynb
+monits
+RESULTS
+wandb
+__pycache__
+.env
+experiment
+util
+*.sh
