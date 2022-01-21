@@ -4,10 +4,10 @@ import torch.nn as nn
 
 def double_conv(in_c, out_c):
     conv = nn.Sequential(
-        nn.Conv2d(in_c, out_c, kernel_size=3, padding=1, padding_mode="reflect"),
+        nn.Conv2d(in_c, out_c, kernel_size=3, padding=1, padding_mode="zeros"),
         nn.InstanceNorm2d(out_c),
         nn.LeakyReLU(inplace=True),
-        nn.Conv2d(out_c, out_c, kernel_size=3, padding=1, padding_mode="reflect"),
+        nn.Conv2d(out_c, out_c, kernel_size=3, padding=1, padding_mode="zeros"),
         nn.InstanceNorm2d(out_c),
         nn.LeakyReLU(inplace=True),
     )

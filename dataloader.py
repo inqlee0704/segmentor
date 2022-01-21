@@ -51,7 +51,10 @@ class SegDataset:
             self.subj_paths = subjlist.loc[:, "ImgDir"].values
 
         if TEST:
-            self.img_paths = self.subj_paths
+            self.img_paths = [
+                os.path.join(subj_path, "zunu_vida-ct.img")
+                for subj_path in self.subj_paths
+            ]
 
         else:
             self.img_paths = [
@@ -155,7 +158,10 @@ class SegDataset_Z:
             self.subj_paths = subjlist.loc[:, "ImgDir"].values
 
         if TEST:
-            self.img_paths = self.subj_paths
+            self.img_paths = [
+                os.path.join(subj_path, "zunu_vida-ct.img")
+                for subj_path in self.subj_paths
+            ]
 
         else:
             self.img_paths = [
@@ -475,7 +481,9 @@ def slice_loader(subjlist, TEST=False):
 
     slices = []
     if TEST:
-        img_paths = subj_paths
+        img_paths = [
+            os.path.join(subj_path, "zunu_vida-ct.img") for subj_path in subj_paths
+        ]
         for ii in range(len(img_paths)):
             img, _ = load(img_paths[ii])
             for jj in range(img.shape[2]):
@@ -557,8 +565,6 @@ def check_files(subjlist):
 """
 Prepare train & valid dataloaders
 """
-
-
 def prep_dataloader(c, k=None, df=None):
     # n_case: load n number of cases, 0: load all
     # K is not none, implement KFold
@@ -611,7 +617,7 @@ def prep_dataloader(c, k=None, df=None):
 
 def prep_testloader(infer_path, test_bs=1):
     # n_case: load n number of cases, 0: load all
-    df = pd.read_csv(infer_path)
+    df = pd.read_csv(infer_path, sep='\t')
     slices = slice_loader(df, TEST=True)
     ds = SegDataset(
         df,

@@ -1,4 +1,5 @@
 import os
+import sys
 from dotenv import load_dotenv
 import time
 import random
@@ -13,7 +14,6 @@ from dataloader import *
 from losses import *
 
 # ML
-from torch import nn
 from torch.cuda import amp
 import torch
 from torchsummary import summary
@@ -23,62 +23,78 @@ from torch.optim.lr_scheduler import (
     ReduceLROnPlateau,
 )
 
-import segmentation_models_pytorch as smp
-
 # Others
-import matplotlib.pyplot as plt
-from medpy.io import load
 import SimpleITK as sitk
 sitk.ProcessObject_SetGlobalWarningDisplay(False)
 
+import argparse
+
+
+parser = argparse.ArgumentParser(description='segmentor')
+parser.add_argument('--mask', default='lobe', type=str, help='[airway, vessels, lung, lobe]')
+parser.add_argument('--model', default='UNet', type=str, help='[UNet, ZUNet]')
+parser.add_argument('--debug', default=False, type=bool, help='[True, False]')
+parser.add_argument('--save', default=True, type=bool, help='[True, False]')
+parser.add_argument('--lr', default=0.0002, type=float, help='learning rate')
+parser.add_argument('--train_bs', default=16, type=int, help='train batch size')
+parser.add_argument('--valid_bs', default=32, type=int, help='valid batch size')
+parser.add_argument('--epochs', default=50, type=int, help='train epoch')
+parser.add_argument('--n_case', default=32, type=int, help='number of cases to use')
+
+args = parser.parse_args()
+
 
 def wandb_config():
-    project = "lobe"
-    run_name = "UNet_zeropadding_n32"
-    debug = True
+    project = args.mask
+    run_name = f"{args.mask}_{args.model}_n{args.n_case}"
+    debug = args.debug
     if debug:
         project = "debug"
 
-    wandb.init(project=project, name=run_name)
+    # wandb.init(project=project, name=run_name)
+    wandb.init(project=project)
     config = wandb.config
     # ENV
     if debug:
         config.epochs = 1
         config.n_case = 5
     else:
-        config.epochs = 40
+        config.epochs = args.epochs
         # n_case = 0 to run all cases
-        config.n_case = 32
+        config.n_case = args.n_case
 
-    config.save = False
+    config.save = args.save
     config.debug = debug
     config.data_path = os.getenv("VIDA_PATH")
     config.in_file = "ENV18PM_ProjSubjList_IN0_train_20211129.in"
     config.in_file_valid = "ENV18PM_ProjSubjList_IN0_valid_20211129.in"
-    config.test_results_dir = "RESULTS"
-    config.name = run_name
+    config.test_results_dir = f"RESULTS/{args.mask}"
+    # config.name = run_name
     config.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    # config.mask = 'airway'
-    # config.mask = "lung"
-    config.mask = "lobe"
-    config.model = "UNet"
+    config.mask = args.mask
+    config.model = args.model
     config.activation = "leakyrelu"
     config.optimizer = "adam"
-    config.scheduler = "CosineAnnealingWarmRestarts"
-    # config.scheduler = "ReduceLROnPlateau"
+    config.scheduler = "CosineAnnealingWarmRestarts" # "ReduceLROnPlateau"
     config.loss = "Combo loss"
     config.combined_loss = True
-
-    config.learning_rate = 0.0002
-    # config.learning_rate = 0.0002
-    # config.learning_rate = 0.0004
-    config.train_bs = 16
-    config.valid_bs = 32
-    config.num_c = 6
+    config.learning_rate = args.lr
+    config.train_bs = args.train_bs
+    config.valid_bs = args.valid_bs
+    if args.mask == 'lobe':
+        config.num_c = 6
+    elif args.mask == 'lung':
+        config.num_c = 3
+    else:
+        config.num_c = 2
+    
+    if config.model == 'ZUNet':
+        config.Z = True
+    else:
+        config.Z = False
     config.aug = True
-    config.Z = False
     config.in_c = 1
+    config.name = run_name
 
     return config
 
