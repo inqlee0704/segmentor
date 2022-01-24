@@ -431,6 +431,30 @@ class Segmentor_Z:
                 pred_volume[:, :, i, :] = p_map
             return pred_volume
 
+    def inference_pmap_multiC(self, img_volume, n_class):
+        # img_volume: [channel,512,512,Z]
+        # pred_volume: [512,512,z,n_class]
+        # n_class: number of classes, for lung: 3 (left, right, background)
+        # probability map
+        self.model.eval()
+        pred_volume = np.zeros((512,512,img_volume.shape[-1],n_class))
+        with torch.no_grad():
+            for i in range(img_volume.shape[-1]):
+                slice = img_volume[:, :, :, i]
+                slice = torch.from_numpy(slice).unsqueeze(0)
+
+                z = i / (img_volume.shape[-1] + 1)
+                z = np.floor(z * 10)
+                z = torch.tensor(z, dtype=torch.int64)
+                out = self.model(slice.to(self.device, dtype=torch.float), z.to(self.device))
+
+                p_map = nn.Softmax(dim=1)(out)
+                p_map = np.squeeze(p_map.cpu().detach())
+                p_map = p_map.permute(1,2,0)
+    
+                pred_volume[:, :, i, :] = p_map
+            return pred_volume
+
     def get_metrics(self, data_loader):
         # outputs: [B, C, W, H]
         # targets: [B, W, H]

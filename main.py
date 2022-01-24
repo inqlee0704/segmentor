@@ -92,8 +92,9 @@ def wandb_config():
         config.Z = True
     else:
         config.Z = False
+
     config.aug = True
-    config.in_c = 1
+    config.in_c = 4
     config.name = run_name
 
     return config
@@ -120,7 +121,11 @@ def main():
         os.makedirs(out_dir, exist_ok=True)
         path = os.path.join(out_dir, f"{config.name}")
 
-    train_loader, valid_loader = prep_dataloader(config)
+    if config.in_c > 1:
+        train_loader, valid_loader = prep_dataloader_P_encoding(config)
+    else:
+        train_loader, valid_loader = prep_dataloader(config)
+
     # criterion = smp.losses.DiceLoss(mode="multiclass")
     # criterion = nn.CrossEntropyLoss()
     criterion = combo_loss
@@ -166,7 +171,7 @@ def main():
     # Train
     best_loss = np.inf
     test_img_path = os.getenv("TEST_IMG_PATH")
-    test_img = prep_test_img(test_img_path, multiC=False)
+    test_img = prep_test_img(test_img_path, multiC=True)
     wandb.watch(eng.model, log="all", log_freq=10)
     for epoch in range(config.epochs):
         if config.combined_loss:
@@ -175,7 +180,9 @@ def main():
             # test_pred = eng.inference(test_img)
             # plt = show_images(test_img, test_pred, epoch)
 
-            test_pmap = eng.inference_pmap(test_img, n_class=config.num_c)
+            # test_pmap = eng.inference_pmap(test_img, n_class=config.num_c)
+            test_pmap = eng.inference_pmap_multiC(test_img, n_class=config.num_c)
+
             plt = plot_pmap(test_pmap, epoch)
             wandb.log(
                 {
