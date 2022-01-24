@@ -192,14 +192,13 @@ class Segmentor:
 
     def inference(self, img_volume):
         # img_volume: [512,512,Z]
-        DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
         self.model.eval()
         pred_volume = np.zeros(img_volume.shape)
         with torch.no_grad():
             for i in range(img_volume.shape[2]):
                 slice = img_volume[:, :, i]
                 slice = torch.from_numpy(slice).unsqueeze(0).unsqueeze(0)
-                out = self.model(slice.to(DEVICE, dtype=torch.float))
+                out = self.model(slice.to(self.device, dtype=torch.float))
                 pred = torch.argmax(out, dim=1)
                 pred = np.squeeze(pred.cpu().detach())
                 pred_volume[:, :, i] = pred
@@ -210,14 +209,13 @@ class Segmentor:
         # pred_volume: [512,512,z,n_class]
         # n_class: number of classes, for lung: 3 (left, right, background)
         # probability map
-        DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
         self.model.eval()
         pred_volume = np.zeros((512,512,img_volume.shape[2],n_class))
         with torch.no_grad():
             for i in range(img_volume.shape[2]):
                 slice = img_volume[:, :, i]
                 slice = torch.from_numpy(slice).unsqueeze(0).unsqueeze(0)
-                out = self.model(slice.to(DEVICE, dtype=torch.float))
+                out = self.model(slice.to(self.device, dtype=torch.float))
                 p_map = nn.Softmax(dim=1)(out)
                 p_map = np.squeeze(p_map.cpu().detach())
                 p_map = p_map.permute(1,2,0)
@@ -230,14 +228,13 @@ class Segmentor:
         # pred_volume: [512,512,z,n_class]
         # n_class: number of classes, for lung: 3 (left, right, background)
         # probability map
-        DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
         self.model.eval()
         pred_volume = np.zeros((512,512,img_volume.shape[-1],n_class))
         with torch.no_grad():
             for i in range(img_volume.shape[-1]):
                 slice = img_volume[:, :, :, i]
                 slice = torch.from_numpy(slice).unsqueeze(0)
-                out = self.model(slice.to(DEVICE, dtype=torch.float))
+                out = self.model(slice.to(self.device, dtype=torch.float))
                 p_map = nn.Softmax(dim=1)(out)
                 p_map = np.squeeze(p_map.cpu().detach())
                 p_map = p_map.permute(1,2,0)
@@ -250,11 +247,11 @@ class Segmentor:
         # targets: [B, W, H]
         iters = len(data_loader)
         pbar = tqdm(enumerate(data_loader), total=iters)
-        DEVICE = 'cuda'
+        self.device = 'cuda'
         with torch.no_grad():
             for step, batch in pbar:
-                inputs = batch["image"].to(DEVICE)
-                targets = batch["seg"].to(DEVICE)
+                inputs = batch["image"].to(self.device)
+                targets = batch["seg"].to(self.device)
                 outputs = self.model(inputs)
                 tp, fp, fn, tn = get_stats(outputs, targets)
                 if step==0:
@@ -397,7 +394,6 @@ class Segmentor_Z:
 
     def inference(self, img_volume):
         # img_volume: [512,512,Z]
-        DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
         self.model.eval()
         pred_volume = np.zeros(img_volume.shape)
         with torch.no_grad():
@@ -407,7 +403,7 @@ class Segmentor_Z:
                 z = i / (img_volume.shape[2] + 1)
                 z = np.floor(z * 10)
                 z = torch.tensor(z, dtype=torch.int64)
-                out = self.model(slice.to(DEVICE, dtype=torch.float), z.to(DEVICE))
+                out = self.model(slice.to(self.device, dtype=torch.float), z.to(self.device))
                 pred = torch.argmax(out, dim=1)
                 pred = np.squeeze(pred.cpu().detach())
                 pred_volume[:, :, i] = pred
@@ -418,7 +414,6 @@ class Segmentor_Z:
         # pred_volume: [512,512,z,n_class]
         # n_class: number of classes, for lung: 3 (left, right, background)
         # probability map
-        DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
         self.model.eval()
         pred_volume = np.zeros((512,512,img_volume.shape[2],n_class))
         with torch.no_grad():
@@ -428,7 +423,7 @@ class Segmentor_Z:
                 z = i / (img_volume.shape[2] + 1)
                 z = np.floor(z * 10)
                 z = torch.tensor(z, dtype=torch.int64)
-                out = self.model(slice.to(DEVICE, dtype=torch.float), z.to(DEVICE))
+                out = self.model(slice.to(self.device, dtype=torch.float), z.to(self.device))
                 p_map = nn.Softmax(dim=1)(out)
                 p_map = np.squeeze(p_map.cpu().detach())
                 p_map = p_map.permute(1,2,0)
