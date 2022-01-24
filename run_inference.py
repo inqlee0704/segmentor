@@ -1,10 +1,10 @@
 import os
 import sys
 from dotenv import load_dotenv
-import time
-import random
+from tqdm.auto import tqdm
 import wandb
 import numpy as np
+import argparse
 
 # Custom
 from networks.UNet import UNet
@@ -16,65 +16,77 @@ from losses import *
 # ML
 from torch.cuda import amp
 import torch
-from torchsummary import summary
-from torch.optim.lr_scheduler import (
-    CosineAnnealingWarmRestarts,
-    CosineAnnealingLR,
-    ReduceLROnPlateau,
-)
 
 # Others
 import SimpleITK as sitk
+from medpy.io import load, save
 sitk.ProcessObject_SetGlobalWarningDisplay(False)
 
+parser = argparse.ArgumentParser(description='segmentor')
+parser.add_argument('--mask', default='lobe', type=str, help='[airway, vessels, lung, lobe]')
+parser.add_argument('--model', default='ZUNet', type=str, help='[UNet, ZUNet]')
+parser.add_argument('--in_file_path',
+    default='D:/silicosis/data/TE_ProjSubjList.in',
+    type=str,
+    help='path to *.in')
+parser.add_argument('--parameter_path',
+    default='RESULTS/ZUNET_zerospadding_n32_20220121/ZUNet_zerospadding_n32_28.pth',
+    type=str,
+    help='path to *.pth')
+
+args = parser.parse_args()
 
 def get_config():
     config = wandb.config
     # ENV
-    config.n_case = 0
     config.data_path = os.getenv("VIDA_PATH")
-    config.in_file_infer = "ENV18PM_ProjSubjList_sillicosis_valid.in"
+    config.in_file_path = args.in_file_path
+    config.parameter_path = args.parameter_path
     config.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    config.mask = 'lobe' # 'airway', 'lung', 'lobe'
-    config.model = "ZUNet"
-
+    config.mask = args.mask # 'airway', 'lung', 'lobe'
+    config.model = args.model
     config.Z = True
     config.num_c = 6
     config.in_c = 1
-
+    
     return config
 
 
 if __name__ == "__main__":
     load_dotenv()
     config = get_config()
-    infer_path = "D:/ENV18PM/ENV18PM_ProjSubjList_IN0_valid_20211129.in"
-    infer_list = pd.read_csv(infer_path)
-    parameter_path = 'D:/segmentor/RESULTS/ZUNET_zerospadding_n32_20220121/ZUNet_zerospadding_n32_28.pth'
-    model = ZUNet_v1(in_channels=config.in_c, num_c=config.num_c)
-    model.load_state_dict(torch.load(parameter_path))
-    DEVICE = "cuda"
-    model.to(DEVICE)
-    # test_data = TE_loader(infer_list, multi_c=True)
-    # model.eval()
+    
+    # load model
+    if config.Z:
+        # parameter_path = 'D:/segmentor/RESULTS/ZUNET_zerospadding_n32_20220121/ZUNet_zerospadding_n32_28.pth'
+        parameter_path = config.parameter_path
+        model = ZUNet_v1(in_channels=config.in_c, num_c=config.num_c)
+        model.load_state_dict(torch.load(parameter_path))
+        model.to(config.device)
+        eng = Segmentor_Z(model=model,device=config.device)
+    else:
+        # parameter_path = 'D:/segmentor/RESULTS/UNet_reflectpadding_n32_20220120/UNet_reflectpadding_n32_42.pth'
+        parameter_path = config.parameter_path
 
-    # # Augmentation
-    # # transforms = tta.Compose([tta.HorizontalFlip(), tta.VerticalFlip()])
+        model = UNet(in_channels=config.in_c, num_c=config.num_c)
+        model.load_state_dict(torch.load(parameter_path))
+        model.to(config.device)
+        eng = Segmentor(model=model, device=config.device)
+    
+    infer_df = pd.read_csv(config.in_file_path, sep='\t')
+    pbar = tqdm(range(len(infer_df)))
+    for i in pbar:
+        subj_path = infer_df.ImgDir[i]
+        print(subj_path)
+        img_path = os.path.join(subj_path,'zunu_vida-ct.img')
+        img, hdr = load(img_path)
+        img[img<-1024] = -1024
+        img = (img - np.min(img)) / (np.max(img) - np.min(img))
+        pred = eng.inference(img)
+        pred[pred==1] = 8
+        pred[pred==2] = 16
+        pred[pred==3] = 32
+        pred[pred==4] = 64
+        pred[pred==5] = 128
+        save(pred,os.path.join(subj_path,f'{config.model}-{config.mask}.img.gz'),hdr=hdr)
 
-    # print("Inference . . .")
-    # out_dir = "data/lung_mask/ZUNet_multiC_n64_pp"
-    # os.makedirs(out_dir, exist_ok=True)
-    # pbar = tqdm(enumerate(test_data), total=len(test_data))
-    # for i, x in pbar:
-    #     pred_label = volume_inference_multiC_z(model, x["image"])
-    #     # pred_label = remove_noise(pred_label, by="centroid")
-    #     hdr = nib.Nifti1Header()
-    #     pair_img = nib.Nifti1Pair(pred_label, np.eye(4), hdr)
-    #     nib.save(
-    #         pair_img,
-    #         f"{out_dir}/" + str(infer_list.loc[i, "ImgDir"][-9:-7]) + ".img.gz",
-    #     )
-    #     # break
-    #     # pred_img = nib.Nifti1Image(pred_label, affine=np.eye(4))
-    #     # pred_img.to_filename('lung_mask2/'+str(infer_list.loc[i,'ImgDir'][7:9])+'.nii.gz')
