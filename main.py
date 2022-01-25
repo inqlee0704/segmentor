@@ -19,7 +19,6 @@ import torch
 from torchsummary import summary
 from torch.optim.lr_scheduler import (
     CosineAnnealingWarmRestarts,
-    CosineAnnealingLR,
     ReduceLROnPlateau,
 )
 
@@ -69,7 +68,6 @@ def wandb_config():
     config.in_file = "ENV18PM_ProjSubjList_IN0_train_20211129.in"
     config.in_file_valid = "ENV18PM_ProjSubjList_IN0_valid_20211129.in"
     config.test_results_dir = f"RESULTS/{args.mask}"
-    # config.name = run_name
     config.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     config.mask = args.mask
     config.model = args.model
@@ -136,9 +134,7 @@ def main():
         scheduler = CosineAnnealingWarmRestarts(
             optimizer, T_0=config.epochs, T_mult=1, eta_min=1e-8, last_epoch=-1
         )
-        # scheduler = ReduceLROnPlateau(
-        #     optimizer, factor=0.5, patience=5, verbose=True
-        # )
+
         eng = Segmentor_Z(
             model=model,
             optimizer=optimizer,
@@ -155,9 +151,7 @@ def main():
         scheduler = CosineAnnealingWarmRestarts(
             optimizer, T_0=config.epochs, T_mult=1, eta_min=1e-8, last_epoch=-1
         )
-        # scheduler = ReduceLROnPlateau(
-        #     optimizer, factor=0.5, patience=5, verbose=True
-        # )
+
         eng = Segmentor(
             model=model,
             optimizer=optimizer,
@@ -179,9 +173,10 @@ def main():
             val_loss, val_dice_loss, val_bce_loss = eng.evaluate(valid_loader)
             # test_pred = eng.inference(test_img)
             # plt = show_images(test_img, test_pred, epoch)
-
-            # test_pmap = eng.inference_pmap(test_img, n_class=config.num_c)
-            test_pmap = eng.inference_pmap_multiC(test_img, n_class=config.num_c)
+            if config.in_c > 1:
+                test_pmap = eng.inference_pmap_multiC(test_img, n_class=config.num_c)
+            else:
+                test_pmap = eng.inference_pmap(test_img, n_class=config.num_c)
 
             plt = plot_pmap(test_pmap, epoch)
             wandb.log(
@@ -211,9 +206,6 @@ def main():
                 }
             )
 
-        # plt.close()
-        if config.scheduler == "ReduceLROnPlateau":
-            scheduler.step(val_loss)
         eng.epoch += 1
         print(f"Epoch: {epoch}, train loss: {trn_loss:5f}, valid loss: {val_loss:5f}")
         if val_loss < best_loss:
