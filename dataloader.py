@@ -713,10 +713,10 @@ def prep_dataloader(c, k=None, df=None):
         # valid_ds = SegDataset(df_valid, valid_slices, mask_name=c.mask)
 
     train_loader = DataLoader(
-        train_ds, batch_size=c.train_bs, shuffle=False, num_workers=4
+        train_ds, batch_size=c.train_bs, shuffle=False, num_workers=0
     )
     valid_loader = DataLoader(
-        valid_ds, batch_size=c.valid_bs, shuffle=False, num_workers=4
+        valid_ds, batch_size=c.valid_bs, shuffle=False, num_workers=0
     )
 
     return train_loader, valid_loader
@@ -745,10 +745,10 @@ def prep_dataloader_P_encoding(c, k=None, df=None):
     valid_ds = SegDataset_Z_P_encoding(df_valid, valid_slices, mask_name=c.mask)
 
     train_loader = DataLoader(
-        train_ds, batch_size=c.train_bs, shuffle=False, num_workers=4
+        train_ds, batch_size=c.train_bs, shuffle=False, num_workers=0
     )
     valid_loader = DataLoader(
-        valid_ds, batch_size=c.valid_bs, shuffle=False, num_workers=4
+        valid_ds, batch_size=c.valid_bs, shuffle=False, num_workers=0
     )
 
     return train_loader, valid_loader

@@ -55,7 +55,7 @@ def wandb_config():
     config = wandb.config
     # ENV
     if debug:
-        config.epochs = 1
+        config.epochs = 2
         config.n_case = 5
     else:
         config.epochs = args.epochs
@@ -65,8 +65,8 @@ def wandb_config():
     config.save = args.save
     config.debug = debug
     config.data_path = os.getenv("VIDA_PATH")
-    config.in_file = "ENV18PM_ProjSubjList_IN0_train_20211129.in"
-    config.in_file_valid = "ENV18PM_ProjSubjList_IN0_valid_20211129.in"
+    config.in_file = "ENV18PM_ProjSubjList_IN0_train.in"
+    config.in_file_valid = "ENV18PM_ProjSubjList_IN0_valid.in"
     config.test_results_dir = f"RESULTS/{args.mask}"
     config.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     config.mask = args.mask
@@ -92,7 +92,7 @@ def wandb_config():
         config.Z = False
 
     config.aug = True
-    config.in_c = 4
+    config.in_c = 4 # 1 or 4
     config.name = run_name
 
     return config
@@ -165,7 +165,10 @@ def main():
     # Train
     best_loss = np.inf
     test_img_path = os.getenv("TEST_IMG_PATH")
-    test_img = prep_test_img(test_img_path, multiC=True)
+    if config.in_c>1:
+        test_img = prep_test_img(test_img_path, multiC=True)
+    else:
+        test_img = prep_test_img(test_img_path, multiC=False)
     wandb.watch(eng.model, log="all", log_freq=10)
     for epoch in range(config.epochs):
         if config.combined_loss:

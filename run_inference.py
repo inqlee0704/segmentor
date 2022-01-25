@@ -30,7 +30,7 @@ parser.add_argument('--in_file_path',
     type=str,
     help='path to *.in')
 parser.add_argument('--parameter_path',
-    default='RESULTS/ZUNET_zerospadding_n32_20220121/ZUNet_zerospadding_n32_28.pth',
+    default='D:\segmentor\RESULTS\lobe\ZUNet_zerospadding_n294_20220124\ZUNet_zerospadding_n294_7.pth',
     type=str,
     help='path to *.pth')
 
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     
     # load model
     if config.Z:
-        # parameter_path = 'D:/segmentor/RESULTS/ZUNET_zerospadding_n32_20220121/ZUNet_zerospadding_n32_28.pth'
+        # parameter_path = 'D:/segmentor/RESULTS/lobe/ZUNet_zerospadding_n294_20220124/ZUNet_zerospadding_n294_8.pth'
         parameter_path = config.parameter_path
         model = ZUNet_v1(in_channels=config.in_c, num_c=config.num_c)
         model.load_state_dict(torch.load(parameter_path))
@@ -90,3 +90,4 @@ if __name__ == "__main__":
         pred[pred==5] = 128
         save(pred,os.path.join(subj_path,f'{config.model}-{config.mask}.img.gz'),hdr=hdr)
 
+        break
