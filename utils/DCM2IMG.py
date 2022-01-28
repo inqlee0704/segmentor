@@ -26,7 +26,6 @@
 import os 
 import SimpleITK as sitk
 import sys
-from utils.DCM2IMG import DCMtoVidaCT
 
 def DCMtoVidaCT(pathImage,saveImage=None):
 
