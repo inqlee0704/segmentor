@@ -18,6 +18,7 @@ from torch.cuda import amp
 import torch
 
 # Others
+from utils.DCM2IMG import DCMtoVidaCT
 import SimpleITK as sitk
 from medpy.io import load, save
 sitk.ProcessObject_SetGlobalWarningDisplay(False)
@@ -79,15 +80,19 @@ if __name__ == "__main__":
         subj_path = infer_df.ImgDir[i]
         print(subj_path)
         img_path = os.path.join(subj_path,'zunu_vida-ct.img')
+        if not os.path.exists(img_path):
+            DCMtoVidaCT(subj_path)
         img, hdr = load(img_path)
         img[img<-1024] = -1024
         img = (img - np.min(img)) / (np.max(img) - np.min(img))
         pred = eng.inference(img)
-        pred[pred==1] = 8
-        pred[pred==2] = 16
-        pred[pred==3] = 32
-        pred[pred==4] = 64
-        pred[pred==5] = 128
-        save(pred,os.path.join(subj_path,f'{config.model}-{config.mask}.img.gz'),hdr=hdr)
+        if config.mask == 'lobe':
+            pred[pred==1] = 8
+            pred[pred==2] = 16
+            pred[pred==3] = 32
+            pred[pred==4] = 64
+            pred[pred==5] = 128
+        elif config.mask == 'airway':
+            pred[pred==1] = 255
 
-        break
+        save(pred,os.path.join(subj_path,f'{config.model}-{config.mask}.img.gz'),hdr=hdr)
