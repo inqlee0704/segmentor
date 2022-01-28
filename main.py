@@ -115,7 +115,7 @@ def main():
 
     if config.save:
         dirname = f'{config.name}_{time.strftime("%Y%m%d", time.gmtime())}'
-        out_dir = os.path.join("RESULTS", dirname)
+        out_dir = os.path.join(f"RESULTS/{config.mask}", dirname)
         os.makedirs(out_dir, exist_ok=True)
         path = os.path.join(out_dir, f"{config.name}")
 
