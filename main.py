@@ -181,7 +181,7 @@ def main():
             else:
                 test_pmap = eng.inference_pmap(test_img, n_class=config.num_c)
 
-            plt = plot_pmap(test_pmap, epoch)
+            plt = plot_pmap(test_pmap, config)
             wandb.log(
                 {
                     "epoch": epoch,

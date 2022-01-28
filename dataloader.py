@@ -818,21 +818,29 @@ def prep_test_img(test_img_path, multiC=False):
     return test_img
 
 
-def plot_pmap(p_map, epoch, z=151):
+def plot_pmap(p_map, config, z=151):
     p_map = np.rot90(p_map,3,[0,1])
-    fig, axs = plt.subplots(1,6, figsize=(18,12))
-    im1 = axs[0].imshow(p_map[:,:,z,0])
-    fig.colorbar(im1, ax=axs[0], shrink=0.15)
-    im2 = axs[1].imshow(p_map[:,:,z,1])
-    fig.colorbar(im2, ax=axs[1], shrink=0.15)
-    im3 = axs[2].imshow(p_map[:,:,z,2])
-    fig.colorbar(im3, ax=axs[2], shrink=0.15)
-    im4 = axs[3].imshow(p_map[:,:,z,3])
-    fig.colorbar(im4, ax=axs[3], shrink=0.15)
-    im5 = axs[4].imshow(p_map[:,:,z,4])
-    fig.colorbar(im5, ax=axs[4], shrink=0.15)
-    im6 = axs[5].imshow(p_map[:,:,z,5])
-    fig.colorbar(im6, ax=axs[5], shrink=0.15)
+    if config.mask=='lobe':
+        fig, axs = plt.subplots(1,6, figsize=(18,12))
+        im1 = axs[0].imshow(p_map[:,:,z,0])
+        fig.colorbar(im1, ax=axs[0], shrink=0.15)
+        im2 = axs[1].imshow(p_map[:,:,z,1])
+        fig.colorbar(im2, ax=axs[1], shrink=0.15)
+        im3 = axs[2].imshow(p_map[:,:,z,2])
+        fig.colorbar(im3, ax=axs[2], shrink=0.15)
+        im4 = axs[3].imshow(p_map[:,:,z,3])
+        fig.colorbar(im4, ax=axs[3], shrink=0.15)
+        im5 = axs[4].imshow(p_map[:,:,z,4])
+        fig.colorbar(im5, ax=axs[4], shrink=0.15)
+        im6 = axs[5].imshow(p_map[:,:,z,5])
+        fig.colorbar(im6, ax=axs[5], shrink=0.15)
+    else:
+        fig, axs = plt.subplots(1,6, figsize=(18,12))
+        im1 = axs[0].imshow(p_map[:,:,z,0])
+        fig.colorbar(im1, ax=axs[0], shrink=0.15)
+        im2 = axs[1].imshow(p_map[:,:,z,1])
+        fig.colorbar(im2, ax=axs[1], shrink=0.15)
+
     # turn of axies
     [ax.set_axis_off() for ax in axs.ravel()]
     return fig
