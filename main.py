@@ -145,7 +145,7 @@ def main():
             combined_loss=config.combined_loss,
         )
     else:
-        model = UNet(in_channel=config.in_c, num_c=config.num_c)
+        model = UNet(in_channels=config.in_c, num_c=config.num_c)
         model.to(config.device)
         optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
         scheduler = CosineAnnealingWarmRestarts(

@@ -24,10 +24,10 @@ def crop_img(tensor, target_tensor):
 
 
 class UNet(nn.Module):
-    def __init__(self, in_channel=1, num_c=1):
+    def __init__(self, in_channels=1, num_c=1):
         super(UNet, self).__init__()
         self.max_pool_2x2 = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.down_conv_1 = double_conv(in_channel, 64)
+        self.down_conv_1 = double_conv(in_channels, 64)
         self.down_conv_2 = double_conv(64, 128)
         self.down_conv_3 = double_conv(128, 256)
         self.down_conv_4 = double_conv(256, 512)
@@ -81,11 +81,11 @@ class UNet(nn.Module):
 
 
 class UNet_encoder(nn.Module):
-    def __init__(self, in_channel=1):
+    def __init__(self, in_channels=1):
         super(UNet_encoder, self).__init__()
         self.max_pool_2x2 = nn.MaxPool2d(kernel_size=2, stride=2)
         self.max_pool_8x8 = nn.MaxPool2d(kernel_size=8, stride=8)
-        self.down_conv_1 = double_conv(in_channel, 64)
+        self.down_conv_1 = double_conv(in_channels, 64)
         self.down_conv_2 = double_conv(64, 128)
         self.down_conv_3 = double_conv(128, 256)
         self.down_conv_4 = double_conv(256, 512)

@@ -801,7 +801,7 @@ def get_train_aug():
 
 
 def prep_test_img(test_img_path, multiC=False):
-    test_img, _ = load(test_img_path)
+    test_img, hdr = load(test_img_path)
     # test_img, _ = load("/data1/inqlee0704/silicosis/data/inputs/02_ct.hdr")
     test_img[test_img < -1024] = -1024
     test_img = (test_img - np.min(test_img)) / (np.max(test_img) - np.min(test_img))
@@ -815,7 +815,7 @@ def prep_test_img(test_img_path, multiC=False):
         test_img = test_img[None,:]
         test_img = np.concatenate([test_img,pos_c], axis=0)
 
-    return test_img
+    return test_img, hdr
 
 
 def plot_pmap(p_map, config, z=151):

@@ -32,7 +32,7 @@ parser.add_argument('--subj_path', default='', type=str, help='Subject path, ex)
 #     type=str,
 #     help='path to *.in')
 parser.add_argument('--parameter_path',
-    default='D:\segmentor\RESULTS\lobe\ZUNet_zerospadding_n294_20220124\ZUNet_zerospadding_n294_7.pth',
+    default="RESULTS/airway/airway_UNet_n0_20220128/airway_UNet_n0_1.pth",
     type=str,
     help='path to *.pth')
 
@@ -59,7 +59,7 @@ def get_config():
         config.Z = True
     else:
         config.Z = False
-    config.in_c = 1
+    config.in_c = 4
     
     return config
 
@@ -94,10 +94,14 @@ if __name__ == "__main__":
     img_path = os.path.join(subj_path,'zunu_vida-ct.img')
     if not os.path.exists(img_path):
         DCMtoVidaCT(subj_path)
-    img, hdr = load(img_path)
-    img[img<-1024] = -1024
-    img = (img - np.min(img)) / (np.max(img) - np.min(img))
-    pred = eng.inference(img)
+    if config.in_c==1:
+        img, hdr = prep_test_img(img_path, multiC=False)
+    else:
+        img, hdr = prep_test_img(img_path, multiC=True)
+    # img, hdr = load(img_path)
+    # img[img<-1024] = -1024
+    # img = (img - np.min(img)) / (np.max(img) - np.min(img))
+    pred = eng.inference_multiC(img,n_class=config.num_c)
     if config.mask == 'lobe':
         pred[pred==1] = 8
         pred[pred==2] = 16

@@ -204,6 +204,24 @@ class Segmentor:
                 pred_volume[:, :, i] = pred
             return pred_volume
 
+    def inference_multiC(self, img_volume, n_class):
+        # img_volume: [channel,512,512,Z]
+        # pred_volume: [512,512,z,n_class]
+        # n_class: number of classes, for lung: 3 (left, right, background)
+        self.model.eval()
+        pred_volume = np.zeros((512,512,img_volume.shape[-1]))
+        # pred_volume = np.zeros((512,512,img_volume.shape[-1],n_class))
+        with torch.no_grad():
+            for i in range(img_volume.shape[-1]):
+                slice = img_volume[:, :, :, i]
+                slice = torch.from_numpy(slice).unsqueeze(0)
+                out = self.model(slice.to(self.device, dtype=torch.float))
+                pred = torch.argmax(out, dim=1)
+                pred = np.squeeze(pred.cpu().detach())
+                pred_volume[:, :, i] = pred
+                
+            return pred_volume
+
     def inference_pmap(self, img_volume, n_class):
         # img_volume: [512,512,Z]
         # pred_volume: [512,512,z,n_class]
