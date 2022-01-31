@@ -59,7 +59,7 @@ def get_config():
         config.Z = True
     else:
         config.Z = False
-    config.in_c = 4
+    config.in_c = 1
     
     return config
 
@@ -96,12 +96,15 @@ if __name__ == "__main__":
         DCMtoVidaCT(subj_path)
     if config.in_c==1:
         img, hdr = prep_test_img(img_path, multiC=False)
+        pred = eng.inference(img)
+
     else:
         img, hdr = prep_test_img(img_path, multiC=True)
+        pred = eng.inference_multiC(img)
+
     # img, hdr = load(img_path)
     # img[img<-1024] = -1024
     # img = (img - np.min(img)) / (np.max(img) - np.min(img))
-    pred = eng.inference_multiC(img,n_class=config.num_c)
     if config.mask == 'lobe':
         pred[pred==1] = 8
         pred[pred==2] = 16
