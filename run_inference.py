@@ -70,14 +70,12 @@ if __name__ == "__main__":
     
     # load model
     if config.Z:
-        # parameter_path = 'D:/segmentor/RESULTS/lobe/ZUNet_zerospadding_n294_20220124/ZUNet_zerospadding_n294_8.pth'
         parameter_path = config.parameter_path
         model = ZUNet_v1(in_channels=config.in_c, num_c=config.num_c)
         model.load_state_dict(torch.load(parameter_path))
         model.to(config.device)
         eng = Segmentor_Z(model=model,device=config.device)
     else:
-        # parameter_path = 'D:/segmentor/RESULTS/UNet_reflectpadding_n32_20220120/UNet_reflectpadding_n32_42.pth'
         parameter_path = config.parameter_path
 
         model = UNet(in_channels=config.in_c, num_c=config.num_c)
@@ -98,9 +96,6 @@ if __name__ == "__main__":
         img, hdr = prep_test_img(img_path, multiC=False)
     else:
         img, hdr = prep_test_img(img_path, multiC=True)
-    # img, hdr = load(img_path)
-    # img[img<-1024] = -1024
-    # img = (img - np.min(img)) / (np.max(img) - np.min(img))
     pred = eng.inference_multiC(img,n_class=config.num_c)
     if config.mask == 'lobe':
         pred[pred==1] = 8
