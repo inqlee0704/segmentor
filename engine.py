@@ -418,7 +418,7 @@ class Segmentor_Z:
             for i in range(img_volume.shape[2]):
                 slice = img_volume[:, :, i]
                 slice = torch.from_numpy(slice).unsqueeze(0).unsqueeze(0)
-                z = i / (img_volume.shape[2] + 1)
+                z = i / (img_volume.shape[-1] + 1)
                 z = np.floor(z * 10)
                 z = torch.tensor(z, dtype=torch.int64)
                 out = self.model(slice.to(self.device, dtype=torch.float), z.to(self.device))
@@ -436,7 +436,7 @@ class Segmentor_Z:
             for i in range(img_volume.shape[-1]):
                 slice = img_volume[:, :, :, i]
                 slice = torch.from_numpy(slice).unsqueeze(0)
-                z = i / (img_volume.shape[2] + 1)
+                z = i / (img_volume.shape[-1] + 1)
                 z = np.floor(z * 10)
                 z = torch.tensor(z, dtype=torch.int64)
                 out = self.model(slice.to(self.device, dtype=torch.float), z.to(self.device))
