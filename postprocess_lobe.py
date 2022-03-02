@@ -1,6 +1,6 @@
 import os
 import sys
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 from tqdm.auto import tqdm
 import numpy as np
 import argparse
@@ -11,9 +11,11 @@ import pandas as pd
 import SimpleITK as sitk
 from skimage.segmentation import clear_border
 from skimage.measure import label, regionprops
+from skimage.filters import threshold_otsu
 from medpy.io import load, save
 sitk.ProcessObject_SetGlobalWarningDisplay(False)
 import matplotlib.pyplot as plt
+import cv2
 
 parser = argparse.ArgumentParser(description='segmentor')
 parser.add_argument('--in_file_path',
@@ -29,6 +31,22 @@ def remove_noise(mask):
     second_largest_area_i = np.argwhere(counts==np.unique(counts)[-2])
     mask = (label_img==second_largest_area_i).astype(int)
     return mask
+
+def get_lung_mask(img):
+    # img: [512,512]
+    thres = threshold_otsu(img)
+    binary = (img>thres).astype(np.uint8)
+    binary = binary*255
+
+    contours, hierarchy = cv2.findContours(binary, 
+                                            cv2.RETR_EXTERNAL,
+                                            cv2.CHAIN_APPROX_NONE)
+
+    max_contour = max(contours, key = cv2.contourArea)
+    canvas = np.zeros((512,512))
+    cv2.fillConvexPoly(canvas,max_contour,1)
+    return canvas
+
 
 def clean_up_lobe(mask):
     # Get mask_map for each lobe
