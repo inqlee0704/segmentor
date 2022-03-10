@@ -34,18 +34,30 @@ def remove_noise(mask):
 
 def get_lung_mask(img):
     # img: [512,512]
+    img[img<-1024] = -1024
+    # img[img>0] = -1024
     thres = threshold_otsu(img)
     binary = (img>thres).astype(np.uint8)
     binary = binary*255
-
-    contours, hierarchy = cv2.findContours(binary, 
+    
+    # open
+    kernelSize = (5,5)
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, kernelSize)
+    binary_open = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel)
+    contours, _ = cv2.findContours(binary_open, 
                                             cv2.RETR_EXTERNAL,
                                             cv2.CHAIN_APPROX_NONE)
-
     max_contour = max(contours, key = cv2.contourArea)
     canvas = np.zeros((512,512))
     cv2.fillConvexPoly(canvas,max_contour,1)
     return canvas
+
+def get_lung_masks(img):
+    # img: [512,512,z]
+    masks = np.zeros(img.shape)
+    for i in range(img.shape[2]):
+        masks[:,:,i] = get_lung_mask(img[:,:,i])
+    return masks
 
 
 def clean_up_lobe(mask):
@@ -102,10 +114,14 @@ def main():
     for i in pbar:
         subj_path = infer_df.ImgDir[i]
         # subj_path = f"D:\\silicosis\\data\\Turkey_dcm\\020"
+        img_path = os.path.join(subj_path,'zunu_vida-ct.img')
         mask_path = os.path.join(subj_path,'ZUNet_in_c4-lobe.img.gz')
-        save_path = os.path.join(subj_path,'ZUNet_in_c4-lobe_pp.img.gz')
+        save_path = os.path.join(subj_path,'ZUNet_in_c4-lobe_contour_open5.img.gz')
+        img, hdr = load(img_path)
         mask, hdr = load(mask_path)
-        mask_pp = clean_up_lobe(mask)
+        # mask_pp = clean_up_lobe(mask)
+        mask_lung = get_lung_masks(img)
+        mask_pp = mask_lung*mask
         save(mask_pp,save_path,hdr=hdr)
 
 
