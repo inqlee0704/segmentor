@@ -3,14 +3,19 @@ Segmentor is a deep learning segmentation engine.
 
 
 # Inference
+### Requirements:
+- model file: RESULTS/lobe/ZUNet.pth
+- dicom: {subj_path}/dicom/
+- in file: ProjSubjListDCM.in (if you want to run multiple cases) 
 
 ```python
-python run_inference --mask=airway
-                     --model=ZUNet
-                     --subj_path=25 
-                     --parameter_path=RESULTS/airway/airway_ZUNet.pth
+# Infer one case (lobes)
+python run_inference --subj_path=25 
+
+# Infer a list of cases
+python run_inference --in_file_path=TE_ProjSubjListDCM.in
 ```
-- mask: airway, lobe, lung, vessels
+- mask: airway, lobes, lung, vessels
 - model: UNet, ZUNet
 - subj_path: Subject folder which has a dicom folder
 - parameter_path: path to the *.pth

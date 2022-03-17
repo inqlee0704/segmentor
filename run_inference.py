@@ -1,5 +1,4 @@
 import os
-import sys
 from dotenv import load_dotenv
 from tqdm.auto import tqdm
 import wandb
@@ -12,46 +11,119 @@ from networks.ZUNet_v1 import ZUNet_v1
 from engine import *
 from dataloader import *
 from losses import *
-from postprocess_lobe import clean_up_lobe
 
 # ML
-from torch.cuda import amp
 import torch
 
 # Others
+import cv2
+from scipy.ndimage import gaussian_filter
+from skimage.filters import threshold_otsu
 from utils.DCM2IMG import DCMtoVidaCT
 import SimpleITK as sitk
 from medpy.io import load, save
 sitk.ProcessObject_SetGlobalWarningDisplay(False)
 
 parser = argparse.ArgumentParser(description='segmentor')
-parser.add_argument('--mask', default='lobe', type=str, help='[airway, vessels, lung, lobe]')
+parser.add_argument('--mask', default='lobes', type=str, help='[airway, vessels, lung, lobes]')
 parser.add_argument('--model', default='ZUNet', type=str, help='[UNet, ZUNet]')
-parser.add_argument('--pp', default=True, type=bool, help='[True, False]')
-
 parser.add_argument('--subj_path', default='', type=str, help='Subject path, ex) VIDA_*/24')
 parser.add_argument('--in_file_path',
     default='D:/silicosis/data/TE_ProjSubjList.in',
     type=str,
     help='path to *.in')
 parser.add_argument('--parameter_path',
-    default="RESULTS\lobe\lobe_ZUNet_n0_20220127\lobe_ZUNet_n0_45.pth",
+    default="RESULTS\lobes\ZUNet.pth",
     type=str,
     help='path to *.pth')
 
 args = parser.parse_args()
 
+def get_chest_mask_slice(img,kernelsize=3):
+    # img: [512,512]
+    img[img<-1024] = -1024
+    # Otsu
+    thres = threshold_otsu(img)
+    binary = (img>thres).astype(np.uint8)
+    binary = binary*255
+    # Perform opening
+    kernelSize = (kernelsize,kernelsize)
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, kernelSize)
+    binary_open = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel)
+    # Get contours
+    contours, _ = cv2.findContours(binary_open, 
+                                            cv2.RETR_EXTERNAL,
+                                            cv2.CHAIN_APPROX_NONE)
+    max_contour = max(contours, key = cv2.contourArea)
+    # Convert a max area contour to a chest mask
+    chest_mask_slice = np.zeros((512,512))
+    cv2.fillConvexPoly(chest_mask_slice,max_contour,1)
+    return chest_mask_slice
+
+def get_chest_mask_3D(img):
+    # img: [512,512,z]
+    chest_mask = np.zeros(img.shape)
+    for i in range(img.shape[2]):
+        chest_mask[:,:,i] = get_chest_mask_slice(img[:,:,i])
+    return chest_mask
+
+def pmap_smoothing_v2(pmap, clean_lung_mask, sigma=5):
+    # Apply channel-wise normalized convolution
+    # Input: pmap: (HxWxZxC)
+    # Output: pred_smooth: (HxWxZxC)
+    pmap_smooth = np.zeros_like(pmap)
+    for i in range(pmap.shape[-1]):
+        pmap_smooth[:,:,:,i] = gaussian_filter(pmap[:,:,:,i]*clean_lung_mask,sigma=sigma)
+        weights = gaussian_filter(clean_lung_mask,sigma=sigma)
+        pmap_smooth[:,:,:,i] /= weights + 0.00001
+        pmap_smooth[:,:,:,i] *= clean_lung_mask
+
+    pred_smooth = np.argmax(pmap_smooth, axis=3)
+    pred_smooth = pred_smooth.astype('float64')
+    return pred_smooth
+
+def run_inference(subj_path, eng, config):
+        print(subj_path)
+        img_path = os.path.join(subj_path,'zunu_vida-ct.img')
+        if not os.path.exists(img_path):
+            DCMtoVidaCT(subj_path)
+        
+        img, hdr =load(img_path)
+        if config.in_c==1:
+            singleC_img, _ = prep_test_img(img_path, multiC=False)
+            pred = eng.inference(singleC_img)
+
+        else:
+            multiC_img, _ = prep_test_img(img_path, multiC=True)
+            chest_mask = get_chest_mask_3D(img)
+            pmap = eng.inference_pmap_multiC(multiC_img,config.num_c)
+            lobe_mask = np.argmax(pmap, axis=3)
+            clean_lobe_mask = chest_mask * lobe_mask
+            clean_lung_mask = (clean_lobe_mask>0).astype(np.uint8)
+            pred = pmap_smoothing_v2(pmap,clean_lung_mask)
+
+        if config.mask == 'lobes':
+            pred[pred==1] = 8
+            pred[pred==2] = 16
+            pred[pred==3] = 32
+            pred[pred==4] = 64
+            pred[pred==5] = 128
+        elif config.mask == 'airway':
+            pred[pred==1] = 255
+        save_path = os.path.join(subj_path,f'{config.model}_{config.mask}.img.gz')
+        print(f'save: {save_path}')
+        save(pred,save_path,hdr=hdr)
+
 def get_config():
     config = wandb.config
     # ENV
-    config.data_path = os.getenv("VIDA_PATH")
     config.in_file_path = args.in_file_path
     config.subj_path = args.subj_path
     config.parameter_path = args.parameter_path
     config.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    config.mask = args.mask # 'airway', 'lung', 'lobe'
+    config.mask = args.mask # 'airway', 'lung', 'lobes'
     config.model = args.model
-    if args.mask == 'lobe':
+    if args.mask == 'lobes':
         config.num_c = 6
     elif args.mask == 'lung':
         config.num_c = 3
@@ -62,13 +134,12 @@ def get_config():
         config.Z = True
     else:
         config.Z = False
-    config.pp = args.pp
     config.in_c = 4
     
     return config
 
 
-if __name__ == "__main__":
+def main():
     load_dotenv()
     config = get_config()
     
@@ -87,36 +158,20 @@ if __name__ == "__main__":
         model.to(config.device)
         eng = Segmentor(model=model, device=config.device)
     
+    print('-----------------------------')
+    print(f'{config.model} is successfully loaded!')
+    print('-----------------------------')
+    print(f'Start inferencing {config.mask}:')
+    # Inference
+    if len(config.subj_path)>0:
+        run_inference(config.subj_path, eng, config)
+    else:
+        infer_df = pd.read_csv(config.in_file_path, sep='\t')
+        pbar = tqdm(range(len(infer_df)))
+        for i in pbar:
+            subj_path = infer_df.ImgDir[i]
+            run_inference(subj_path, eng, config)
 
-    infer_df = pd.read_csv(config.in_file_path, sep='\t')
-    pbar = tqdm(range(len(infer_df)))
-    for i in pbar:
-        subj_path = infer_df.ImgDir[i]
-    # subj_path = config.subj_path
-        print(subj_path)
-        img_path = os.path.join(subj_path,'zunu_vida-ct.img')
-        if not os.path.exists(img_path):
-            DCMtoVidaCT(subj_path)
-        if config.in_c==1:
-            img, hdr = prep_test_img(img_path, multiC=False)
-            pred = eng.inference(img)
 
-        else:
-            img, hdr = prep_test_img(img_path, multiC=True)
-            pred = eng.inference_multiC(img)
-
-        if config.mask == 'lobe':
-            pred[pred==1] = 8
-            pred[pred==2] = 16
-            pred[pred==3] = 32
-            pred[pred==4] = 64
-            pred[pred==5] = 128
-        elif config.mask == 'airway':
-            pred[pred==1] = 255
-        save_path = os.path.join(subj_path,f'{config.model}_in_c{config.in_c}-{config.mask}.img.gz')
-        # print(f'save: {save_path}')
-        save(pred,save_path,hdr=hdr)
-        if config.pp:
-            save_path_pp = os.path.join(subj_path,f'{config.model}_in_c{config.in_c}-{config.mask}_pp.img.gz')
-            mask_pp = clean_up_lobe(pred)
-            save(mask_pp,save_path_pp,hdr=hdr)
+if __name__ == "__main__":
+    main()

@@ -32,6 +32,17 @@ def remove_noise(mask):
     mask = (label_img==second_largest_area_i).astype(int)
     return mask
 
+def pmap_smoothing(pmap, sigma=1):
+    # Apply channel-wise Gaussian smoothing
+    # Input: pmap: (HxWxZxC)
+    # Output: pred_smooth: (HxWxZxC)
+    pmap_smooth = np.zeros_like(pmap)
+    for i in range(pmap.shape[-1]):
+        pmap_smooth[:,:,:,i] = gaussian_filter(pmap[:,:,:,i],sigma=sigma,mode='nearest')
+    pred_smooth = np.argmax(pmap_smooth, axis=3)
+    pred_smooth = pred_smooth.astype('float64')
+    return pred_smooth
+
 def get_lung_mask(img):
     # img: [512,512]
     img[img<-1024] = -1024

@@ -30,7 +30,7 @@ import argparse
 
 
 parser = argparse.ArgumentParser(description='segmentor')
-parser.add_argument('--mask', default='lobe', type=str, help='[airway, vessels, lung, lobe]')
+parser.add_argument('--mask', default='lobes', type=str, help='[airway, vessels, lung, lobes]')
 parser.add_argument('--model', default='UNet', type=str, help='[UNet, ZUNet]')
 parser.add_argument('--debug', default=False, type=bool, help='[True, False]')
 parser.add_argument('--save', default=True, type=bool, help='[True, False]')
@@ -79,7 +79,7 @@ def wandb_config():
     config.learning_rate = args.lr
     config.train_bs = args.train_bs
     config.valid_bs = args.valid_bs
-    if args.mask == 'lobe':
+    if args.mask == 'lobes':
         config.num_c = 6
     elif args.mask == 'lung':
         config.num_c = 3

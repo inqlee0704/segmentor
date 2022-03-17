@@ -67,7 +67,7 @@ class SegDataset:
                     os.path.join(subj_path, "ZUNU_vida-vessels.img.gz")
                     for subj_path in self.subj_paths
                 ]
-            elif mask_name == "lobe":
+            elif mask_name == "lobes":
                 self.mask_paths = [
                     os.path.join(subj_path, "ZUNU_vida-lobes.img.gz")
                     for subj_path in self.subj_paths
@@ -107,14 +107,14 @@ class SegDataset:
             elif self.mask_name == "lung":
                 mask[mask == 20] = 1
                 mask[mask == 30] = 2
-            elif self.mask_name == "lobe":
+            elif self.mask_name == "lobes":
                 mask[mask == 8] = 1
                 mask[mask == 16] = 2
                 mask[mask == 32] = 3
                 mask[mask == 64] = 4
                 mask[mask == 128] = 5
             else:
-                print("Specify mask_name (airway,vessel,lung,lobe)")
+                print("Specify mask_name (airway,vessel,lung,lobes)")
                 return -1
 
             if self.augmentations is not None:
@@ -174,7 +174,7 @@ class SegDataset_Z:
                     os.path.join(subj_path, "ZUNU_vida-vessels.img.gz")
                     for subj_path in self.subj_paths
                 ]
-            elif mask_name == "lobe":
+            elif mask_name == "lobes":
                 self.mask_paths = [
                     os.path.join(subj_path, "ZUNU_vida-lobes.img.gz")
                     for subj_path in self.subj_paths
@@ -218,14 +218,14 @@ class SegDataset_Z:
             elif self.mask_name == "lung":
                 mask[mask == 20] = 1
                 mask[mask == 30] = 2
-            elif self.mask_name == "lobe":
+            elif self.mask_name == "lobes":
                 mask[mask == 8] = 1
                 mask[mask == 16] = 2
                 mask[mask == 32] = 3
                 mask[mask == 64] = 4
                 mask[mask == 128] = 5
             else:
-                print("Specify mask_name (airway,vessel,lung,lobe)")
+                print("Specify mask_name (airway,vessel,lung,lobes)")
                 return -1
 
             if self.augmentations is not None:
@@ -286,7 +286,7 @@ class SegDataset_Z_P_encoding:
                     os.path.join(subj_path, "ZUNU_vida-vessels.img.gz")
                     for subj_path in self.subj_paths
                 ]
-            elif mask_name == "lobe":
+            elif mask_name == "lobes":
                 self.mask_paths = [
                     os.path.join(subj_path, "ZUNU_vida-lobes.img.gz")
                     for subj_path in self.subj_paths
@@ -338,14 +338,14 @@ class SegDataset_Z_P_encoding:
             elif self.mask_name == "lung":
                 mask[mask == 20] = 1
                 mask[mask == 30] = 2
-            elif self.mask_name == "lobe":
+            elif self.mask_name == "lobes":
                 mask[mask == 8] = 1
                 mask[mask == 16] = 2
                 mask[mask == 32] = 3
                 mask[mask == 64] = 4
                 mask[mask == 128] = 5
             else:
-                print("Specify mask_name (airway,vessel,lung,lobe)")
+                print("Specify mask_name (airway,vessel,lung,lobes)")
                 return -1
 
             if self.augmentations is not None:
@@ -402,7 +402,7 @@ class SegDataset_Zmap:
                     os.path.join(subj_path, "ZUNU_vida-vessels.img.gz")
                     for subj_path in self.subj_paths
                 ]
-            elif mask_name == "lobe":
+            elif mask_name == "lobes":
                 self.mask_paths = [
                     os.path.join(subj_path, "ZUNU_vida-lobes.img.gz")
                     for subj_path in self.subj_paths
@@ -448,14 +448,14 @@ class SegDataset_Zmap:
             elif self.mask_name == "lung":
                 mask[mask == 20] = 1
                 mask[mask == 30] = 2
-            elif self.mask_name == "lobe":
+            elif self.mask_name == "lobes":
                 mask[mask == 8] = 1
                 mask[mask == 16] = 2
                 mask[mask == 32] = 3
                 mask[mask == 64] = 4
                 mask[mask == 128] = 5
             else:
-                print("Specify mask_name (airway,vessel,lung,lobe)")
+                print("Specify mask_name (airway,vessel,lung,lobes)")
                 return -1
 
             if self.augmentations is not None:
@@ -540,7 +540,7 @@ class SegDataset_multiC_withZ:
                 self.mask[self.mask == 20] = 1
                 self.mask[self.mask == 30] = 1
             else:
-                print("Specify mask_name (airway,vessel,lung,lobe)")
+                print("Specify mask_name (airway,vessel,lung,lobes)")
                 return -1
 
             self.pat_num = slc[0]
@@ -820,7 +820,7 @@ def prep_test_img(test_img_path, multiC=False):
 
 def plot_pmap(p_map, config, z=151):
     p_map = np.rot90(p_map,3,[0,1])
-    if config.mask=='lobe':
+    if config.mask=='lobes':
         fig, axs = plt.subplots(1,6, figsize=(18,12))
         im1 = axs[0].imshow(p_map[:,:,z,0])
         fig.colorbar(im1, ax=axs[0], shrink=0.15)
