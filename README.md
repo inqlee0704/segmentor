@@ -15,11 +15,15 @@ python run_inference --subj_path=25
 # Infer a list of cases
 python run_inference --in_file_path=TE_ProjSubjListDCM.in
 ```
+#### Parameters:
 - mask: airway, lobes, lung, vessels
 - model: UNet, ZUNet
 - subj_path: Subject folder which has a dicom folder
 - parameter_path: path to the *.pth
 
+#### Outputs:
+- {model}_{mask}.img.gz
+- {model}_{mask}.hdr.gz
 
 # Train
 ## Data Preparation

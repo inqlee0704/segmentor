@@ -8,9 +8,8 @@ import argparse
 # Custom
 from networks.UNet import UNet
 from networks.ZUNet_v1 import ZUNet_v1
-from engine import *
-from dataloader import *
-from losses import *
+from engine import Segmentor, Segmentor_Z
+from dataloader import prep_test_img
 
 # ML
 import torch
