@@ -16,6 +16,7 @@ import torch
 
 # Others
 import cv2
+from skimage.measure import label, regionprops
 from scipy.ndimage import gaussian_filter
 from skimage.filters import threshold_otsu
 from utils.DCM2IMG import DCMtoVidaCT
@@ -81,6 +82,25 @@ def pmap_smoothing_v2(pmap, clean_lung_mask, sigma=5):
     pred_smooth = pred_smooth.astype('float64')
     return pred_smooth
 
+def remove_noise(mask):
+# Keep the second largest (the largest is background) area and remove other regions
+    label_img = label(mask)
+    _, counts = np.unique(label_img,return_counts=True)
+    second_largest_area_i = np.argwhere(counts==np.unique(counts)[-2])
+    mask = (label_img==second_largest_area_i).astype(int)
+    return mask
+
+def clean_up_lung_sagital(mask):
+    # remove unattached noises in a sagital view
+    lung_mask = (mask!=0).astype(int)
+    map_lung = np.sum(lung_mask,axis=0)
+    map_lung = (map_lung>0).astype(int)
+    clean_map_lung = remove_noise(map_lung)
+    clean_lung = np.dstack([clean_map_lung]*mask.shape[0])
+    clean_lung = np.transpose(clean_lung,(2, 0, 1))
+    clean_mask = mask*clean_lung
+    return clean_mask
+
 def run_inference(subj_path, eng, config):
         print(subj_path)
         img_path = os.path.join(subj_path,'zunu_vida-ct.img')
@@ -100,6 +120,7 @@ def run_inference(subj_path, eng, config):
             clean_lobe_mask = chest_mask * lobe_mask
             clean_lung_mask = (clean_lobe_mask>0).astype(np.uint8)
             pred = pmap_smoothing_v2(pmap,clean_lung_mask)
+        pred = clean_up_lung_sagital(pred)
 
         if config.mask == 'lobes':
             pred[pred==1] = 8
@@ -109,6 +130,7 @@ def run_inference(subj_path, eng, config):
             pred[pred==5] = 128
         elif config.mask == 'airway':
             pred[pred==1] = 255
+
         save_path = os.path.join(subj_path,f'{config.model}_{config.mask}.img.gz')
         print(f'save: {save_path}')
         save(pred,save_path,hdr=hdr)

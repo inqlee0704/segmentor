@@ -25,6 +25,7 @@ python run_inference --in_file_path=TE_ProjSubjListDCM.in
 - {model}_{mask}.img.gz
 - {model}_{mask}.hdr.gz
 
+
 # Train
 ## Data Preparation
 0. Get VIDA_sheet.csv
