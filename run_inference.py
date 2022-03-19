@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from tqdm.auto import tqdm
 import wandb
 import numpy as np
+import pandas as pd
 import argparse
 
 # Custom
@@ -16,7 +17,7 @@ import torch
 
 # Others
 import cv2
-from skimage.measure import label, regionprops
+from skimage.measure import label
 from scipy.ndimage import gaussian_filter
 from skimage.filters import threshold_otsu
 from utils.DCM2IMG import DCMtoVidaCT
