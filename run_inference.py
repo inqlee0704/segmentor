@@ -103,6 +103,7 @@ def clean_up_lung_sagital(mask):
     return clean_mask
 
 def run_inference(subj_path, eng, config):
+        sigma = 3
         print(subj_path)
         img_path = os.path.join(subj_path,'zunu_vida-ct.img')
         if not os.path.exists(img_path):
@@ -120,7 +121,7 @@ def run_inference(subj_path, eng, config):
             lobe_mask = np.argmax(pmap, axis=3)
             clean_lobe_mask = chest_mask * lobe_mask
             clean_lung_mask = (clean_lobe_mask>0).astype(np.uint8)
-            pred = pmap_smoothing_v2(pmap,clean_lung_mask)
+            pred = pmap_smoothing_v2(pmap,clean_lung_mask,sigma=sigma)
         pred = clean_up_lung_sagital(pred)
 
         if config.mask == 'lobes':
@@ -132,7 +133,7 @@ def run_inference(subj_path, eng, config):
         elif config.mask == 'airway':
             pred[pred==1] = 255
 
-        save_path = os.path.join(subj_path,f'{config.model}_{config.mask}.img.gz')
+        save_path = os.path.join(subj_path,f'{config.model}_{config.mask}_sigma{sigma}.img.gz')
         print(f'save: {save_path}')
         save(pred,save_path,hdr=hdr)
 

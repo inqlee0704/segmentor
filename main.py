@@ -166,9 +166,9 @@ def main():
     best_loss = np.inf
     test_img_path = os.getenv("TEST_IMG_PATH")
     if config.in_c>1:
-        test_img = prep_test_img(test_img_path, multiC=True)
+        test_img, hdr = prep_test_img(test_img_path, multiC=True)
     else:
-        test_img = prep_test_img(test_img_path, multiC=False)
+        test_img, hdr = prep_test_img(test_img_path, multiC=False)
     wandb.watch(eng.model, log="all", log_freq=10)
     for epoch in range(config.epochs):
         if config.combined_loss:
