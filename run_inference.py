@@ -30,8 +30,10 @@ parser = argparse.ArgumentParser(description='segmentor')
 parser.add_argument('--mask', default='lobes', type=str, help='[airway, vessels, lung, lobes]')
 parser.add_argument('--model', default='ZUNet', type=str, help='[UNet, ZUNet]')
 parser.add_argument('--subj_path', default='', type=str, help='Subject path, ex) VIDA_*/24')
+parser.add_argument('--pp', default=False, type=bool, help='Postprocess: [True, False]')
+
 parser.add_argument('--in_file_path',
-    default='D:/silicosis/data/TE_ProjSubjList.in',
+    default='D:/silicosis/data/TE_ProjSubjListDCM.in',
     type=str,
     help='path to *.in')
 parser.add_argument('--parameter_path',
@@ -39,7 +41,31 @@ parser.add_argument('--parameter_path',
     type=str,
     help='path to *.pth')
 
-args = parser.parse_args()
+def get_config(args):
+    config = wandb.config
+    # ENV
+    config.in_file_path = args.in_file_path
+    config.subj_path = args.subj_path
+    config.parameter_path = args.parameter_path
+    config.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    config.mask = args.mask # 'airway', 'lung', 'lobes'
+    config.model = args.model
+    config.pp = args.pp
+    if args.mask == 'lobes':
+        config.num_c = 6
+    elif args.mask == 'lung':
+        config.num_c = 3
+    else:
+        config.num_c = 2
+    
+    if config.model == 'ZUNet':
+        config.Z = True
+        config.in_c = 4
+    else:
+        config.Z = False
+        config.in_c = 1
+    
+    return config
 
 def get_chest_mask_slice(img,kernelsize=3):
     # img: [512,512]
@@ -113,16 +139,29 @@ def run_inference(subj_path, eng, config):
         img, hdr =load(img_path)
         if config.in_c==1:
             singleC_img, _ = prep_test_img(img_path, multiC=False)
-            pred = eng.inference(singleC_img)
+            if config.pp:
+                print(config.pp)
+                pmap = eng.inference_pmap_multiC(singleC_img,config.num_c)
+                chest_mask = get_chest_mask_3D(img)
+                lobe_mask = np.argmax(pmap, axis=3)
+                clean_lobe_mask = chest_mask * lobe_mask
+                clean_lung_mask = (clean_lobe_mask>0).astype(np.uint8)
+                pred = pmap_smoothing_v2(pmap,clean_lung_mask,sigma=sigma)
+
+            else:
+                pred = eng.inference(singleC_img)
 
         else:
             multiC_img, _ = prep_test_img(img_path, multiC=True)
-            chest_mask = get_chest_mask_3D(img)
-            pmap = eng.inference_pmap_multiC(multiC_img,config.num_c)
-            lobe_mask = np.argmax(pmap, axis=3)
-            clean_lobe_mask = chest_mask * lobe_mask
-            clean_lung_mask = (clean_lobe_mask>0).astype(np.uint8)
-            pred = pmap_smoothing_v2(pmap,clean_lung_mask,sigma=sigma)
+            if config.pp:
+                pmap = eng.inference_pmap_multiC(multiC_img,config.num_c)
+                chest_mask = get_chest_mask_3D(img)
+                lobe_mask = np.argmax(pmap, axis=3)
+                clean_lobe_mask = chest_mask * lobe_mask
+                clean_lung_mask = (clean_lobe_mask>0).astype(np.uint8)
+                pred = pmap_smoothing_v2(pmap,clean_lung_mask,sigma=sigma)
+            else:
+                pred = eng.inference_multiC(multiC_img)
         pred = clean_up_lung_sagital(pred)
 
         if config.mask == 'lobes':
@@ -134,39 +173,16 @@ def run_inference(subj_path, eng, config):
         elif config.mask == 'airway':
             pred[pred==1] = 255
 
-        save_path = os.path.join(subj_path,f'{config.model}_{config.mask}_sigma{sigma}.img.gz')
+        if config.pp:
+            save_path = os.path.join(subj_path,f'{config.model}_{config.mask}_inC{config.in_c}_sigma{sigma}.img.gz')
+        else:
+            save_path = os.path.join(subj_path,f'{config.model}_{config.mask}_inC{config.in_c}.img.gz')
+
         print(f'save: {save_path}')
         save(pred,save_path,hdr=hdr)
 
-def get_config():
-    config = wandb.config
-    # ENV
-    config.in_file_path = args.in_file_path
-    config.subj_path = args.subj_path
-    config.parameter_path = args.parameter_path
-    config.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    config.mask = args.mask # 'airway', 'lung', 'lobes'
-    config.model = args.model
-    if args.mask == 'lobes':
-        config.num_c = 6
-    elif args.mask == 'lung':
-        config.num_c = 3
-    else:
-        config.num_c = 2
-    
-    if config.model == 'ZUNet':
-        config.Z = True
-    else:
-        config.Z = False
-    config.in_c = 4
-    
-    return config
-
-
-def main():
+def main(config):
     load_dotenv()
-    config = get_config()
-    
     # load model
     if config.Z:
         parameter_path = config.parameter_path
@@ -198,4 +214,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    args = parser.parse_args()
+    print(args)
+    config = get_config(args)
+    main(config)
