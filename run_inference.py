@@ -1,3 +1,4 @@
+# Given dicom image, it saves mask files
 import os
 from dotenv import load_dotenv
 from tqdm.auto import tqdm

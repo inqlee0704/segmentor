@@ -3,6 +3,7 @@ Segmentor is a deep learning segmentation engine.
 
 
 # Inference
+Predict and save segmentation results.
 ### Requirements:
 - model file: RESULTS/lobe/ZUNet.pth
 - dicom: {subj_path}/dicom/
@@ -25,6 +26,11 @@ python run_inference --in_file_path=TE_ProjSubjListDCM.in
 - {model}_{mask}.img.gz
 - {model}_{mask}.hdr.gz
 
+# Test
+Calculate segmentation accuracy using the mask from the 'run_inference.py' and ground truth.
+### Requirements:
+- predicted mask: *.img.gz & *.hdr
+- label: *.img.gz & *.hdr
 
 # Train
 ## Data Preparation
