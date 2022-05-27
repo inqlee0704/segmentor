@@ -1,6 +1,18 @@
 # segmentor
 Segmentor is a deep learning segmentation engine.
 
+# Install
+```python
+
+# activate conda
+conda activate
+# clone the repository
+git clone https://github.com/inqlee0704/segmentor.git
+
+# Install packages
+cd segmentor
+python -m pip install -r requirements.txt
+```
 
 # Inference
 Predict and save segmentation results.

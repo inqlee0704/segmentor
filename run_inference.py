@@ -42,36 +42,63 @@ parser.add_argument('--parameter_path',
     help='path to *.pth')
 
 
-
-def get_config(args):
-    config = wandb.config
-    # ENV
-    config.in_file_path = args.in_file_path
-    config.subj_path = args.subj_path
-    config.parameter_path = args.parameter_path
-    config.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    config.mask = args.mask # 'airway', 'lung', 'lobes'
-    config.model = args.model
-    config.pp = args.pp
-    if args.mask == 'lobes':
-        config.num_c = 6
-    elif args.mask == 'lung':
-        config.num_c = 3
-    else:
-        config.num_c = 2
+class CFD:
     
-    if config.model == 'ZUNet':
-        config.Z = True
+    # ENV
+    in_file_path = args.in_file_path
+    subj_path = args.subj_path
+    parameter_path = args.parameter_path
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    mask = args.mask # 'airway', 'lung', 'lobes'
+    model = args.model
+    pp = args.pp
+    if args.mask == 'lobes':
+        num_c = 6
+    elif args.mask == 'lung':
+        num_c = 3
     else:
-        config.Z = False
+        num_c = 2
+    
+    if model == 'ZUNet':
+        Z = True
+    else:
+        Z = False
 
     if args.multi_channel:
-        config.in_c = 4
+        in_c = 4
     else:
-        config.in_c = 1
+        in_c = 1
 
     
-    return config
+# def get_config(args):
+#     config = wandb.config
+#     # ENV
+#     config.in_file_path = args.in_file_path
+#     config.subj_path = args.subj_path
+#     config.parameter_path = args.parameter_path
+#     config.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#     config.mask = args.mask # 'airway', 'lung', 'lobes'
+#     config.model = args.model
+#     config.pp = args.pp
+#     if args.mask == 'lobes':
+#         config.num_c = 6
+#     elif args.mask == 'lung':
+#         config.num_c = 3
+#     else:
+#         config.num_c = 2
+    
+#     if config.model == 'ZUNet':
+#         config.Z = True
+#     else:
+#         config.Z = False
+
+#     if args.multi_channel:
+#         config.in_c = 4
+#     else:
+#         config.in_c = 1
+
+    
+#     return config
 
 def get_chest_mask_slice(img,kernelsize=3):
     # img: [512,512]
@@ -224,5 +251,6 @@ def main(config):
 if __name__ == "__main__":
     args = parser.parse_args()
     print(args)
-    config = get_config(args)
+    # config = get_config(args)
+    config = CFD(args)
     main(config)
