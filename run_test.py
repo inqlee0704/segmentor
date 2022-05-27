@@ -136,6 +136,9 @@ def main(config):
         dice3.append(dice[3])
         dice4.append(dice[4])
         dice5.append(dice[5])
+        print()
+        print(subj_path)
+        print(dice)
 
         sensitivity1.append(sensitivity[1])
         sensitivity2.append(sensitivity[2])

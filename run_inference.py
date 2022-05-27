@@ -31,7 +31,7 @@ parser.add_argument('--mask', default='lobes', type=str, help='[airway, vessels,
 parser.add_argument('--model', default='ZUNet', type=str, help='[UNet, ZUNet]')
 parser.add_argument('--subj_path', default='', type=str, help='Subject path, ex) VIDA_*/24')
 parser.add_argument('--pp', default=False, type=bool, help='Postprocess: [True, False]')
-
+parser.add_argument('--multi_channel', default=False, type=bool, help='Multi-channel input: [True, False]')
 parser.add_argument('--in_file_path',
     default='D:/silicosis/data/TE_ProjSubjListDCM.in',
     type=str,
@@ -40,6 +40,8 @@ parser.add_argument('--parameter_path',
     default="RESULTS\lobes\ZUNet.pth",
     type=str,
     help='path to *.pth')
+
+
 
 def get_config(args):
     config = wandb.config
@@ -60,10 +62,14 @@ def get_config(args):
     
     if config.model == 'ZUNet':
         config.Z = True
-        config.in_c = 4
     else:
         config.Z = False
+
+    if args.multi_channel:
+        config.in_c = 4
+    else:
         config.in_c = 1
+
     
     return config
 
@@ -147,6 +153,7 @@ def run_inference(subj_path, eng, config):
                 clean_lobe_mask = chest_mask * lobe_mask
                 clean_lung_mask = (clean_lobe_mask>0).astype(np.uint8)
                 pred = pmap_smoothing_v2(pmap,clean_lung_mask,sigma=sigma)
+                pred = clean_up_lung_sagital(pred)
 
             else:
                 pred = eng.inference(singleC_img)
@@ -160,9 +167,10 @@ def run_inference(subj_path, eng, config):
                 clean_lobe_mask = chest_mask * lobe_mask
                 clean_lung_mask = (clean_lobe_mask>0).astype(np.uint8)
                 pred = pmap_smoothing_v2(pmap,clean_lung_mask,sigma=sigma)
+                pred = clean_up_lung_sagital(pred)
+
             else:
                 pred = eng.inference_multiC(multiC_img)
-        pred = clean_up_lung_sagital(pred)
 
         if config.mask == 'lobes':
             pred[pred==1] = 8

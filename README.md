@@ -11,16 +11,20 @@ Predict and save segmentation results.
 
 ```python
 # Infer one case (lobes)
-python run_inference --subj_path=25 
+python run_inference --mask=lobes --model=ZUNet --subj_path=25 --parameter_path=RESULTS/lobes/ZUNet.pth --pp=True --multi_channel=True
+
+# Infer one case (airway)
+python run_inference --mask=airway --model=UNet --subj_path=25 --parameter_path=RESULTS/airway/UNet.pth --pp=False --multi_channel=False
 
 # Infer a list of cases
 python run_inference --in_file_path=TE_ProjSubjListDCM.in
 ```
 #### Parameters:
-- mask: airway, lobes, lung, vessels
-- model: UNet, ZUNet
+- mask: [airway, lobes, lung, vessels]
+- model: [UNet, ZUNet]
 - subj_path: Subject folder which has a dicom folder
 - parameter_path: path to the *.pth
+- pp: postprocessing [True, False]
 
 #### Outputs:
 - {model}_{mask}.img.gz
