@@ -2,7 +2,6 @@
 import os
 from dotenv import load_dotenv
 from tqdm.auto import tqdm
-import wandb
 import numpy as np
 import pandas as pd
 import argparse
